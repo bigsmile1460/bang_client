@@ -132,7 +132,7 @@ public abstract class TCPSocketManagerBase<T> : MonoSingleton<T> where T : TCPSo
                     var processedLength = 0;
                     while (processedLength < newBuffer.Length)
                     {
-                        if (newBuffer.Length - processedLength < 12) // Adjusted for new header size
+                        if (newBuffer.Length - processedLength < 17) // Adjusted for new header size
                         {
                             break;
                         }
@@ -154,7 +154,7 @@ public abstract class TCPSocketManagerBase<T> : MonoSingleton<T> where T : TCPSo
                         var type = (PayloadOneofCase)BitConverter.ToInt16(typeBytes);
                         Debug.Log($"PacketType:{type}");
                         var versionLength = reader.ReadByte();
-                        if (newBuffer.Length - processedLength < 12 + versionLength) // Adjusted for new header size
+                        if (newBuffer.Length - processedLength < 17 + versionLength) // Adjusted for new header size
                         {
                             break;
                         }
@@ -166,12 +166,12 @@ public abstract class TCPSocketManagerBase<T> : MonoSingleton<T> where T : TCPSo
                         var payloadLengthBytes = reader.ReadBytes(4);
                         Array.Reverse(payloadLengthBytes);
                         var payloadLength = BitConverter.ToInt32(payloadLengthBytes);
-                        if (newBuffer.Length - processedLength < 12 + versionLength + payloadLength) // Adjusted for new header size
+                        if (newBuffer.Length - processedLength < 17 + versionLength + payloadLength) // Adjusted for new header size
                         {
                             break;
                         }
                         var payloadBytes = reader.ReadBytes(payloadLength);
-                        var totalLength = 12 + versionLength + payloadLength; // Adjusted for new header size
+                        var totalLength = 17 + versionLength + payloadLength; // Adjusted for new header size
                         var packet = new Packet(roomState, roomId, type, version, sequence, payloadBytes);
                         receiveQueue.Enqueue(packet);
                         Debug.Log($"Enqueued Type: {type}|{receiveQueue.Count}");
