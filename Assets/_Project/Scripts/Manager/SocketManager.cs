@@ -23,12 +23,14 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
             }
             UIManager.Get<PopupLogin>().OnLoginEnd(response.Success);
         }
+        //roomState = RoomState.WAIT;
     }
 
     public void RegisterResponse(GamePacket gamePacket)
     {
         var response = gamePacket.RegisterResponse;
         UIManager.Get<PopupLogin>().OnRegisterEnd(response.Success);
+        //roomState = RoomState.WAIT;
     }
 
     // �� ����
@@ -37,6 +39,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         var response = gamePacket.CreateRoomResponse;
         Debug.Log("failcode : " + response.FailCode.ToString());
         UIManager.Get<PopupRoomCreate>().OnRoomCreateResult(response.Success, response.Room);
+        //roomState = RoomState.WAIT;
     }
 
     // �� ��� ��ȸ
@@ -44,6 +47,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
     {
         var response = gamePacket.GetRoomListResponse;
         UIManager.Get<UIMain>().SetRoomList(response.Rooms.ToList());
+        //roomState = RoomState.WAIT;
     }
 
     // �� ����
@@ -55,6 +59,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
             UIManager.Show<UIRoom>(response.Room);
             roomId = response.Room.Id;
         }
+        //roomState = RoomState.WAIT;
     }
 
     // ���� �� ����
@@ -68,7 +73,9 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         else if(response.Success)
         {
             UIManager.Show<UIRoom>(response.Room);
+            roomId = response.Room.Id;
         }
+        //roomState = RoomState.WAIT;
     }
 
     // �� ���� �˸�
@@ -79,6 +86,8 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         {
             UIManager.Get<UIRoom>().AddUserInfo(response.JoinUser.ToUserInfo());
         }
+        //roomState = RoomState.WAIT;
+        
     }
 
     // �� ������
@@ -88,7 +97,9 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         if (response.Success)
         {
             UIManager.Hide<UIRoom>();
+            roomId = 0;
         }
+        //roomState = RoomState.WAIT;
     }
 
     // �� ������ �˸�
@@ -96,8 +107,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
     {
         var response = gamePacket.LeaveRoomNotification;
         UIManager.Get<UIRoom>().RemoveUserInfo(response.UserId);
-        roomState = RoomState.WAIT;
-        roomId = 0;
+        //roomState = RoomState.WAIT;
     }
 
     public void GamePrepareResponse(GamePacket gamePacket)
@@ -109,10 +119,13 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
             Debug.Log("GamePrepareResponse Failcode : " + response.FailCode.ToString());
         }
        roomState = RoomState.INAGAME;
+        //Disconnect();
+        Connect();
     }
 
     public void GamePrepareNotification(GamePacket gamePacket)
     {
+        var userInfo = new UserInfo();
         var response = gamePacket.GamePrepareNotification;
         if (response.Room != null)
         {
@@ -123,6 +136,11 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
             UIManager.Get<UIRoom>().OnPrepare(response.Room.Users);
         }
        roomState = RoomState.INAGAME;
+        if (userInfo.id != response.Room.OwnerId)
+        {
+            //Disconnect();
+            Connect();
+        }
     }
 
     public void GameStartResponse(GamePacket gamePacket)
@@ -529,6 +547,9 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         
         UIManager.Show<PopupResult>(response.Winners, response.WinType);
         roomState = RoomState.WAIT;
+        roomId = 0;
+        //Disconnect();
+        //Connect();
     }
 
     public void CardSelectResponse(GamePacket gamePacket)
