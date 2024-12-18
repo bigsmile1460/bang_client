@@ -11,7 +11,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
     public bool isAnimationPlaying = false;
     public RoomState roomState = RoomState.WAIT;
     public int roomId = 0;
-
+    public int UserId = 0;
     public void LoginResponse(GamePacket gamePacket)
     {
         var response = gamePacket.LoginResponse;
@@ -20,6 +20,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
             if (response.MyInfo != null)
             {
                 UserInfo.myInfo = new UserInfo(response.MyInfo);
+                UserId = (int)response.MyInfo.Id;
             }
             UIManager.Get<PopupLogin>().OnLoginEnd(response.Success);
         }
@@ -125,7 +126,6 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
 
     public void GamePrepareNotification(GamePacket gamePacket)
     {
-        var userInfo = new UserInfo();
         var response = gamePacket.GamePrepareNotification;
         if (response.Room != null)
         {
@@ -135,8 +135,8 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         {
             UIManager.Get<UIRoom>().OnPrepare(response.Room.Users);
         }
-       roomState = RoomState.INAGAME;
-        if (userInfo.id != response.Room.OwnerId)
+        roomState = RoomState.INAGAME;
+        if (UserId != response.Room.OwnerId)
         {
             //Disconnect();
             Connect();
@@ -549,7 +549,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         roomState = RoomState.WAIT;
         roomId = 0;
         //Disconnect();
-        //Connect();
+        Connect();
     }
 
     public void CardSelectResponse(GamePacket gamePacket)
