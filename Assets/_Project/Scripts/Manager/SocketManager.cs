@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
+using Ironcow.WebSocketPacket;
 
 public class SocketManager : TCPSocketManagerBase<SocketManager>
 {
@@ -12,6 +13,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
     public RoomState roomState = RoomState.WAIT;
     public int roomId = 0;
     public int UserId = 0;
+    public string jwt = "";
     public void LoginResponse(GamePacket gamePacket)
     {
         var response = gamePacket.LoginResponse;
@@ -21,6 +23,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
             {
                 UserInfo.myInfo = new UserInfo(response.MyInfo);
                 UserId = (int)response.MyInfo.Id;
+                jwt = response.Token;
             }
             UIManager.Get<PopupLogin>().OnLoginEnd(response.Success);
         }
@@ -41,6 +44,7 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         Debug.Log("failcode : " + response.FailCode.ToString());
         UIManager.Get<PopupRoomCreate>().OnRoomCreateResult(response.Success, response.Room);
         //roomState = RoomState.WAIT;
+        roomId = response.Room.Id;
     }
 
     // �� ��� ��ȸ
@@ -122,6 +126,10 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
        roomState = RoomState.INAGAME;
         //Disconnect();
         Connect();
+        gamePacket.HealthCheckRequest = new C2SHealthCheckRequest();
+        gamePacket.HealthCheckRequest.Jwt = jwt;
+        gamePacket.HealthCheckRequest.RoomId = roomId;
+        Send(gamePacket);
     }
 
     public void GamePrepareNotification(GamePacket gamePacket)
@@ -139,7 +147,15 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         if (UserId != response.Room.OwnerId)
         {
             //Disconnect();
+            //Action<string> callback = (jwt) =>
+            //{
+            //};
             Connect();
+            gamePacket.HealthCheckRequest = new C2SHealthCheckRequest();
+            gamePacket.HealthCheckRequest.Jwt = jwt;
+            gamePacket.HealthCheckRequest.RoomId = roomId;
+            Send(gamePacket);
+
         }
     }
 
@@ -548,8 +564,12 @@ public class SocketManager : TCPSocketManagerBase<SocketManager>
         UIManager.Show<PopupResult>(response.Winners, response.WinType);
         roomState = RoomState.WAIT;
         roomId = 0;
-        //Disconnect();
+
         Connect();
+        gamePacket.HealthCheckRequest = new C2SHealthCheckRequest();
+        gamePacket.HealthCheckRequest.Jwt = jwt;
+        gamePacket.HealthCheckRequest.RoomId = roomId;
+        Send(gamePacket);
     }
 
     public void CardSelectResponse(GamePacket gamePacket)
